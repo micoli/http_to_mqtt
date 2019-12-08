@@ -102,13 +102,22 @@ function ensureTopicSpecified(req, res, next) {
     }
 }
 
+function checkRetainFlag(req,res,next){
+  req.body.retain=!!req.body.retain
+  next();
+}
+
 app.get('/keep_alive/', logRequest, function (req, res) {
     mqttClient.publish(settings.keepalive.topic, settings.keepalive.message);
     res.sendStatus(200);
 });
 
-app.post('/post/', logRequest, authorizeUser, checkSingleFileUpload, checkMessagePathQueryParameter, checkTopicQueryParameter, ensureTopicSpecified, function (req, res) {
-    mqttClient.publish(req.body['topic'], req.body['message']);
+app.post('/post/', logRequest, authorizeUser, checkSingleFileUpload, checkMessagePathQueryParameter, checkTopicQueryParameter, checkRetainFlag, ensureTopicSpecified, function (req, res) {
+	let options = {
+      retain : req.body.retain 
+    };
+    mqttClient.publish(req.body['topic'], req.body['message'], options);
+    console.log('published message', {topic: req.body['topic'], message: req.body['message'], options: options});
     res.sendStatus(200);
 });
 
